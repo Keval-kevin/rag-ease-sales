@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Easenext BDE Academy</title>
+<style>
+  :root{
+    --accent:#1F4E79; --accent-dk:#16365A; --ink:#1a1a1a; --muted:#5a6b7b;
+    --bg:#f4f7fa; --card:#ffffff; --line:#dbe4ec; --soft:#eaf1f8; --ok:#1e7a46;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  header{background:var(--accent);color:#fff;padding:14px 20px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  header b{font-size:18px}
+  header .sub{opacity:.85;font-size:13px}
+  main{display:grid;grid-template-columns:270px 1fr;gap:18px;max-width:1200px;margin:18px auto;padding:0 16px;align-items:start}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;position:sticky;top:16px}
+  .panel label{display:block;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px}
+  .panel label:first-child{margin-top:0}
+  .pills{display:flex;flex-wrap:wrap;gap:6px}
+  .pill{border:1px solid var(--line);background:#fff;color:var(--accent-dk);border-radius:999px;padding:6px 11px;font-size:13px;cursor:pointer}
+  .pill.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  select,input[type=password],input[type=range]{width:100%}
+  select,input[type=password]{border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:14px;background:#fff}
+  button.act{margin-top:16px;width:100%;border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px;cursor:pointer;color:var(--muted)}
+  .hint{font-size:12px;color:var(--muted);margin:12px 0 0}
+  .chat{background:var(--card);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;min-height:70vh;overflow:hidden}
+  .log{padding:18px;flex:1;display:flex;flex-direction:column;gap:14px}
+  .msg{max-width:88%;padding:11px 14px;border-radius:12px;white-space:pre-wrap;word-wrap:break-word}
+  .msg.user{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:3px}
+  .msg.bot{align-self:flex-start;background:var(--soft);border:1px solid var(--line);border-bottom-left-radius:3px}
+  .msg.bot h3{margin:.4em 0 .2em;font-size:14px;color:var(--accent-dk)}
+  .msg.bot ul{margin:.3em 0;padding-left:1.2em}
+  .msg.bot code{background:#fff;border:1px solid var(--line);border-radius:4px;padding:0 4px;font-size:13px}
+  details.src{margin-top:8px;font-size:13px}
+  details.src summary{cursor:pointer;color:var(--accent);font-weight:600}
+  details.src ul{margin:6px 0 0;padding-left:1.1em;color:var(--muted)}
+  .starters{padding:0 18px 12px;display:flex;flex-wrap:wrap;gap:8px}
+  .starters button{border:1px dashed var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-size:13px;color:var(--accent-dk);cursor:pointer}
+  form{display:flex;gap:8px;border-top:1px solid var(--line);padding:12px}
+  form input[type=text]{flex:1;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:15px}
+  form button{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:0 20px;font-size:15px;cursor:pointer}
+  form button:disabled{opacity:.5;cursor:default}
+  .typing{color:var(--muted);font-style:italic}
+  @media(max-width:800px){main{grid-template-columns:1fr}.panel{position:static}.msg{max-width:100%}}
+</style>
+</head>
+<body>
+<header>
+  <b>🎓 Easenext BDE Academy</b>
+  <span class="sub">Learn &amp; brainstorm from the IT-BDE handbook</span>
+</header>
+
+<main>
+  <aside class="panel">
+    <label>Mode</label>
+    <div id="modes" class="pills"></div>
+    <label>Passages to use — <span id="kv">6</span></label>
+    <input id="k" type="range" min="3" max="10" value="6" />
+    <label>Limit to chapter</label>
+    <select id="chapter"><option value="">All chapters</option></select>
+    <div id="pwbox" style="display:none">
+      <label>Password</label>
+      <input id="pw" type="password" placeholder="Access password" />
+    </div>
+    <button class="act" id="clear">Clear chat</button>
+    <p class="hint" id="llmnote"></p>
+  </aside>
+
+  <section class="chat">
+    <div id="log" class="log"></div>
+    <div id="starters" class="starters"></div>
+    <form id="form">
+      <input id="q" type="text" placeholder="Ask, brainstorm, or type a request…" autocomplete="off" />
+      <button id="send">Send</button>
+    </form>
+  </section>
+</main>
+
+<script>
+const MODES = [["ask","Ask"],["explain","Explain simply"],["brainstorm","Brainstorm"],
+               ["quiz","Quiz me"],["roleplay","Roleplay"],["coach","Study coach"]];
+const STARTERS = [
+  "What does an IT BDE actually do day to day?",
+  "Explain what discovery is, simply.",
+  "Brainstorm 5 ways to research a prospect before outreach.",
+  "Quiz me on the software development lifecycle.",
+  "Roleplay a CTO who says 'we already have a team'.",
+  "Build me a one-week study plan to start."
+];
+let mode = "ask";
+const $ = s => document.querySelector(s);
+
+// --- mode pills ---
+$("#modes").innerHTML = MODES.map(([v,t],i)=>
+  `<button class="pill ${i===0?'on':''}" data-m="${v}">${t}</button>`).join("");
+$("#modes").addEventListener("click", e => {
+  const b = e.target.closest(".pill"); if(!b) return;
+  document.querySelectorAll(".pill").forEach(p=>p.classList.remove("on"));
+  b.classList.add("on"); mode = b.dataset.m;
+});
+
+$("#k").addEventListener("input", e => $("#kv").textContent = e.target.value);
+$("#clear").addEventListener("click", () => { $("#log").innerHTML=""; renderStarters(); });
+
+// --- tiny markdown ---
+function esc(s){return s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+function md(s){
+  let h = esc(s);
+  h = h.replace(/^###\s?(.+)$/gm,"<h3>$1</h3>");
+  h = h.replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/\*(.+?)\*/g,"<i>$1</i>");
+  h = h.replace(/`([^`]+)`/g,"<code>$1</code>");
+  h = h.replace(/(?:^|\n)[-•]\s?(.+)/g,"\n<li>$1</li>");
+  h = h.replace(/(<li>[\s\S]*?<\/li>)/g, m => "<ul>"+m+"</ul>");
+  return h;
+}
+
+function addMsg(role, html){
+  const d = document.createElement("div");
+  d.className = "msg " + role; d.innerHTML = html;
+  $("#log").appendChild(d); d.scrollIntoView({block:"end",behavior:"smooth"});
+  return d;
+}
+function renderStarters(){
+  $("#starters").innerHTML = STARTERS.map(s=>`<button data-s="${esc(s)}">${esc(s)}</button>`).join("");
+}
+$("#starters").addEventListener("click", e => {
+  const b = e.target.closest("button"); if(b) send(b.dataset.s);
+});
+
+async function send(text){
+  text = (text || $("#q").value).trim(); if(!text) return;
+  $("#q").value=""; $("#starters").innerHTML="";
+  addMsg("user", esc(text));
+  const bot = addMsg("bot", '<span class="typing">Thinking…</span>');
+  $("#send").disabled = true;
+  try{
+    const r = await fetch("/api/ask",{method:"POST",headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({query:text, mode, k:+$("#k").value, chapter:$("#chapter").value,
+                            password: localStorage.getItem("pw")||""})});
+    if(r.status===401){ bot.innerHTML = "🔒 This app needs a password. Enter it in the sidebar and try again."; $("#pwbox").style.display="block"; return; }
+    const d = await r.json();
+    let html = md(d.answer || "(no answer)");
+    if(d.sources && d.sources.length){
+      html += `<details class="src"><summary>Sources (${d.sources.length})</summary><ul>` +
+              d.sources.map(s=>`<li>${esc(s.label)}</li>`).join("") + "</ul></details>";
+    }
+    bot.innerHTML = html;
+  }catch(err){ bot.innerHTML = "⚠️ Could not reach the server. " + esc(String(err)); }
+  finally{ $("#send").disabled=false; }
+}
+$("#form").addEventListener("submit", e => { e.preventDefault(); send(); });
+
+// --- init ---
+(async function init(){
+  try{
+    const c = await (await fetch("/api/config")).json();
+    $("#llmnote").textContent = c.llm
+      ? `✅ Answers written by ${c.model||"LLM"}`
+      : "ℹ️ No LLM key set — showing the most relevant handbook passages (retrieval-only).";
+    if(c.password_required) $("#pwbox").style.display="block";
+    const ch = await (await fetch("/api/chapters")).json();
+    $("#chapter").innerHTML = '<option value="">All chapters</option>' +
+      ch.map(x=>`<option value="${x.n}">Ch.${x.n} — ${esc(x.t)}</option>`).join("");
+  }catch(e){ /* offline-ish */ }
+  renderStarters();
+})();
+$("#pw").addEventListener("change", e => localStorage.setItem("pw", e.target.value));
+</script>
+</body>
+</html>

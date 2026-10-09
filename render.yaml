@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: bde-academy
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: LLM_BASE_URL
+        value: https://api.groq.com/openai/v1
+      - key: LLM_MODEL
+        value: openai/gpt-oss-20b
+      - key: LLM_API_KEY
+        sync: false
+      - key: APP_PASSWORD
+        sync: false

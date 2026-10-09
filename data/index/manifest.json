@@ -1,0 +1,7 @@
+{
+  "source": "handbook.pdf",
+  "embed_model": "minishlab/potion-base-8M",
+  "dim": 256,
+  "chunks": 288,
+  "chapters": 29
+}

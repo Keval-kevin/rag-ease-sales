@@ -1,0 +1,5 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pypdf>=4.0
+numpy>=1.24
+model2vec>=0.3
